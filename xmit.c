@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     strftime(dst, BUFSIZ, "%y/%m/%d %H:%M:%S", now);
     fprintf(log, "%s %s %s", dst, getenv("REMOTE_ADDR"), val[i]);
 
-    if((p = strrchr(val[i], '/')) != NULL) p++; else p = val[i];
+    if((p = strrchr(val[i], '/')) != NULL) p++; else p = (char *) val[i];
     if((q = strrchr(p, '\\')) != NULL) p = q + 1; /* IE sends full path.      */
 
     if(strlcpy(dst, prefix, BUFSIZ) >= BUFSIZ ||
