@@ -1,7 +1,7 @@
 #include <stdio.h>    /* smbgw.c - RFC-1867 file transfer to SMB3      */
 #include <string.h>   /* http://libccgi.sourceforge.net - cgi by Losen */
 #include <stdlib.h>   /* http://bradconte.com/sha256_c  - sha by Conte */
-#include <unistd.h>   /* Copyright 2015 Charles Fisher. Distributed    */
+#include <unistd.h>   /* Copyright 2017 Charles Fisher. Distributed    */
 #include <time.h>     /* under the terms of the GNU Lesser General     */
 #include <sys/stat.h> /* Public License (LGPL 2.1)                     */
 #include <sys/types.h>/* Compile with:
@@ -13,7 +13,7 @@ I wish I could: https://matt.sh/howto-c - also consider -static/chroot */
 #define UPL_PATH "/home/httpd/smbgw/" /* Trailing slash/filename prefix 400 */
 #define TMP_PATH "/home/httpd/smbgw/smbgw" /* Must lie in same filesystem.  */
 #define LOG_PATH "/home/httpd/logs/smbgw.log" /* Must be writable. */
-#define DIR_PATH "/usr/local/etc/allowed_dirs.txt" /* Omit the share name */
+#define DIR_PATH "/usr/local/etc/allowed_dirs.txt"
 
 #define uchar unsigned char /*  8-bit byte                             */
 #define uint unsigned int /*   32-bit word                             */
