@@ -12,7 +12,7 @@ I wish I could: https://matt.sh/howto-c - also consider -static/chroot */
 
 #define UPL_PATH "/home/httpd/smbgw/" /* Trailing slash/filename prefix 400 */
 #define TMP_PATH "/home/httpd/smbgw/smbgw" /* Must lie in same filesystem.  */
-#define LOG_PATH "/home/httpd/logs/smbgw.log" /* Must be writable. */
+#define LOG_PATH "/home/httpd/logs/smbgw.log" /* Must exist & be writable. */
 #define DIR_PATH "/usr/local/etc/allowed_dirs.txt"
 
 #define uchar unsigned char /*  8-bit byte                             */
