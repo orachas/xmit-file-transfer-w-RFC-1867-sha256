@@ -96,104 +96,6 @@ int main(int argc, char **argv)
 
   if(!(val = CGI_lookup_all(vl, 0))) continue;
 
-#include <stdio.h>    /* smbgw.c - RFC-1867 gateway to SMB3            */
-#include <string.h>   /* http://libccgi.sourceforge.net - cgi by Losen */
-#include <stdlib.h>   /* http://bradconte.com/sha256_c  - sha by Conte */
-#include <unistd.h>   /* Copyright 2015 Charles Fisher. Distributed    */
-#include <time.h>     /* under the terms of the GNU Lesser General     */
-#include <sys/stat.h> /* Public License (LGPL 2.1)                     */
-#include <sys/types.h>/* Compile with:
-cc -Wall -I. -g -O2 -o smbgw.cgi smbgw.c ccgi.c strlcpy.c strlcat.c sha256.c
-I wish I could: https://matt.sh/howto-c - also consider -static/chroot */
-
-#include "ccgi.h"
-
-#define UPL_PATH "/home/httpd/smbgw/" /* Trailing slash/filename prefix 400 */
-#define TMP_PATH "/home/httpd/smbgw/smbgw" /* Must lie in same filesystem.  */
-#define LOG_PATH "/home/httpd/logs/smbgw.log" /* Must exist & be writable.  */
-#define DIR_PATH "/usr/local/etc/allowed_dirs.txt"
-
-#define uchar unsigned char /*  8-bit byte                             */
-#define uint unsigned int /*   32-bit word                             */
-
-typedef struct {               /* smbclient now depends on over 100    */
- uchar data[64];               /* .so libraries on modern systems - it */
- uint  datalen;                /* is far too large for admins to build */
- uint  bitlen[2];              /* from source for every critical patch */
- uint  state[8]; } SHA256_CTX; /* Old systems need a gateway           */
-
-void sha256_init(SHA256_CTX *);
-void sha256_update(SHA256_CTX *, uchar *, uint len);
-void sha256_final(SHA256_CTX *, uchar *hash);
-
-size_t strlcat(char *, const char *, size_t);
-size_t strlcpy(char *, const char *, size_t);
-
-void E(void) { printf("command error\n"); } /* error functions */
-void e(char *s) { printf(s); }
-
-int main(int argc, char **argv)
-{
- CGI_varlist *vl;
- int tlen = strlen(TMP_PATH);
- FILE *log;
- const char *name, *dir;
- char prefix[BUFSIZ] = UPL_PATH, dst[BUFSIZ], srv[BUFSIZ],
-      *p = getenv("SCRIPT_NAME");
-
- umask(umask((mode_t)0)|S_IWUSR|S_IWGRP|S_IWOTH|S_IXUSR|S_IXGRP|S_IXOTH);
-
- printf("Content-type: text/plain\r\n\r\n");
-
- if(p != NULL) /* The CGI-reported basename must be the target server */
- {
-  char genbuf[BUFSIZ];
-
-  if(strlcpy(dst, p,         BUFSIZ) >= BUFSIZ) return 1; /* These are self-  */
-  if((p = strrchr(dst, '/')) != NULL) p++; else p = dst;
-  if(strlcpy(genbuf, p,      BUFSIZ) >= BUFSIZ) return 1; /* inflicted errors */
-  if(strlcpy(srv, p,         BUFSIZ) >= BUFSIZ) return 1; /* that users should*/
-  if((p = strchr(genbuf, '.')) != NULL) *p = '\0';
-  if((p = strchr(srv, '.')) != NULL) *p = '\0';
-  if(strlcat(prefix, genbuf, BUFSIZ) >= BUFSIZ ||
-     strlcat(prefix, "-",    BUFSIZ) >= BUFSIZ) return 1; /* not normally see */
- } else { e("config error"); return 1; }
-
-
- if((log = fopen(LOG_PATH, "a")) == NULL) { e("log error"); return 1; }
-
- if((vl = CGI_get_all(TMP_PATH"-XXXXXX")) == 0 ) { e("nodata"); return 1; }
-
-/*All files received--force to disk: sync && echo 3 > /proc/sys/vm/drop_caches*/
- sync(); /* Suggest to disk */
-
- if((dir = CGI_lookup(vl, "dir")))
- {
-  FILE *dirs = fopen(DIR_PATH, "r"); /* SMB server permitted directories */
-  char genbuf[BUFSIZ], f = 1;
-
-  if(!dirs) { e("no dir"); return 1; }
-  while(fgets(genbuf, BUFSIZ, dirs))
-  { /* Remove the fgets-included newline */
-   if((p = strrchr(genbuf, '\n')) != NULL) *p = '\0';
-   if(!strcmp(genbuf, dir)) { f = 0; break; }
-  }
-
-  fclose(dirs);
-
-  if(f) { e("no dir"); return 1; }
- }
- else { e("no dir"); return 1; }
-
- printf("%s\n", dir);
-
- for(name = CGI_first_name(vl); name != 0; name = CGI_next_name(vl))
- {
-  int i;
-  CGI_value *val;
-
-  if(!(val = CGI_lookup_all(vl, 0))) continue;
-
   for(i = 0; val[i]; i++)
   {
    struct stat junk_buf; /* Does filename match TMP_PATH, and exist? */
@@ -288,7 +190,7 @@ int main(int argc, char **argv)
      if((goodfile = popen(cmd, "r"))) /* Run the SMB transfer */
      {
       while(fgets(cmd, BUFSIZ, goodfile)) printf("%s", cmd);
-      fclose(goodfile);
+      pclose(goodfile);
      }
     }
    }
@@ -307,7 +209,7 @@ Server configuration for \\remotesmbhost.someweirddomain.com\share\subdir\target
 
 [server] cd apache/cgi-bin
 [server] ln smbgw.cgi remotesmbhost.cgi              # Each server needs a separate copy/link of the program
-[server] grep search /etc/resolv.conf                # If the smb server is not in your DNS domain, add a search
+[server] grep search /etc/resolv.conf                # If smb server not in DNS domain, add a search, maybe /etc/hosts
 search someweirddomain.com
 [server] cat /usr/local/etc/allowed_dirs.txt         # Share with subdir - exact match w/case, **NO BACKSLASHES**
 /share/subdir/targetdir
